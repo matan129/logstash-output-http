@@ -81,7 +81,7 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
   # If message, then the body will be the result of formatting the event according to message
   #
   # Otherwise, the event is sent as json.
-  config :format, :validate => ["json", "json_batch", "form", "message"], :default => "json"
+  config :format, :validate => ["json", "json_batch", "form", "message", "binary"], :default => "json"
 
   # Set this to true if you want to enable gzip compression for your http requests
   config :http_compression, :validate => :boolean, :default => false
@@ -106,6 +106,7 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
         when "json" ; @content_type = "application/json"
         when "json_batch" ; @content_type = "application/json"
         when "message" ; @content_type = "text/plain"
+        when "binary" ; @content_type = "application/octet-stream"
       end
     end
 
@@ -303,6 +304,8 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
       LogStash::Json.dump(map_event(event))
     elsif @format == "message"
       event.sprintf(@message)
+    elsif @format == "binary"
+      event.get(@message)
     elsif @format == "json_batch"
       LogStash::Json.dump(event.map {|e| map_event(e) })
     else
@@ -369,13 +372,17 @@ class LogStash::Outputs::Http < LogStash::Outputs::Base
       if @message.nil?
         raise "message must be set if message format is used"
       end
-
       if @content_type.nil?
         raise "content_type must be set if message format is used"
       end
 
       unless @mapping.nil?
         @logger.warn "mapping is not supported and will be ignored if message format is used"
+      end
+    end
+    if @message == "binary"
+      if @message.nil?
+        raise "message must be set if binary format is used"
       end
     end
   end

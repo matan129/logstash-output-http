@@ -308,6 +308,20 @@ describe LogStash::Outputs::Http do
       include_examples("a received event")
     end
 
+    describe "sending the event as binary" do
+      let(:event) {
+        LogStash::Event.new({"binary_data" => "\x00\x00"})
+      }
+
+      let(:config) {
+        base_config.merge({"url" => url, "http_method" => "post", "pool_max" => 1, "format" => "binary", "message" => "binary_data"})
+      }
+      let(:expected_body) { "\x00\x00" }
+      let(:expected_content_type) { "application/octet-stream" }
+
+      include_examples("a received event")
+    end
+
     describe "sending a mapped event" do
       let(:config) {
         base_config.merge({"url" => url, "http_method" => "post", "pool_max" => 1, "mapping" => {"blah" => "X %{foo}"} })
